@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UFC Fight Night: Lewis vs. Teixeira - Interactive Predictions</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Slate & Red Fury -->
+    <!-- Application Structure Plan: The application transforms the linear, text-heavy source report into a non-linear, interactive dashboard. The structure is designed for user-driven exploration rather than passive reading. It prioritizes quick access to key predictions on the main card (landing view), with a central interactive "Full Fight Card" section that acts as a navigation hub. Clicking any fight reveals a detailed modal view with visualizations and analysis. This query-based model (user pulls info on demand) is more efficient and engaging for the target audience (fans, bettors) than scrolling through a long document. The structure is composed of: 1) A high-impact header. 2) A "Main Event" focus section. 3) An interactive "Full Fight Card" list that serves as the primary navigation tool. 4) A modal window for detailed, on-demand analysis of any selected fight. This architecture makes the dense data highly consumable and allows users to compare fights easily without losing context. -->
+    <!-- Visualization & Content Choices: The choices below support the interactive dashboard structure by transforming static data into dynamic, easily digestible visuals. All visualizations are rendered on Canvas via Chart.js, adhering to the NO SVG constraint.
+- Report Info: Main Event Tale of the Tape (Table). -> Goal: Compare. -> Viz: Horizontal Grouped Bar Chart. -> Interaction: Hover for tooltips. -> Justification: Visually superior to a table for quickly comparing physical attributes like age, height, and reach. -> Library: Chart.js.
+- Report Info: Fighter stats (SLpM, Accuracy, etc.). -> Goal: Compare. -> Viz: Radar Chart. -> Interaction: Hover for tooltips. -> Justification: Provides a holistic "shape" of a fighter's style, making it easy to see strengths and weaknesses at a glance. -> Library: Chart.js.
+- Report Info: Betting Odds (Text). -> Goal: Inform. -> Viz: Simple Horizontal Bar Chart. -> Interaction: Static display with data labels. -> Justification: Translates numerical odds into a clear visual representation of market favorability. -> Library: Chart.js.
+- Report Info: Full Fight Card (Table). -> Goal: Organize/Navigate. -> Viz: Interactive HTML/CSS list. -> Interaction: Click to open a modal with detailed analysis. -> Justification: Serves as the core interactive hub, allowing users to efficiently access deep information for any fight. -> Library: Vanilla JS.
+- Report Info: Prediction Outcome (Text). -> Goal: Inform. -> Viz: Styled HTML badges with icons (🥊, 🥋, 📜). -> Interaction: Static display. -> Justification: Provides an immediate, scannable visual summary of the predicted outcome for each fight. -> Library: HTML/Tailwind CSS. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a; /* slate-900 */
+            color: #cbd5e1; /* slate-300 */
+        }
+        .main-title-gradient {
+            background: linear-gradient(to right, #ef4444, #f97316);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .modal-enter-active, .modal-leave-active {
+            transition: opacity 0.3s ease;
+        }
+        .modal-enter-from, .modal-leave-to {
+            opacity: 0;
+        }
+        .modal-content-enter-active, .modal-content-leave-active {
+            transition: all 0.3s ease;
+        }
+        .modal-content-enter-from, .modal-content-leave-to {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 250px;
+            max-height: 300px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 300px;
+                max-height: 350px;
+            }
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Header -->
+    <header class="py-8 px-4 text-center">
+        <h1 class="text-4xl md:text-6xl font-black uppercase main-title-gradient tracking-wide">UFC Fight Night</h1>
+        <p class="mt-2 text-xl md:text-2xl font-bold text-white">Lewis vs. Teixeira</p>
+        <p class="text-lg text-slate-400">July 12, 2025 | Bridgestone Arena, Nashville, TN</p>
+    </header>
+
+    <main class="container mx-auto px-4 py-8">
+        
+        <!-- Main Event Section -->
+        <section id="main-event" class="mb-12">
+            <h2 class="text-3xl font-bold text-white text-center mb-2">Main Event Showdown</h2>
+            <p class="text-center text-slate-400 max-w-3xl mx-auto mb-8">A clash of generations as knockout king Derrick Lewis faces the undefeated phenom Tallison Teixeira. Explore the full card below and click any fight for a deep-dive analysis.</p>
+            <div class="bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-6 md:p-8 flex flex-col md:flex-row items-center gap-8 cursor-pointer hover:bg-slate-700/50 transition-colors duration-300" onclick="openModal(0)">
+                <div class="flex-1 text-center md:text-left">
+                    <p class="text-red-500 font-semibold text-lg">Heavyweight Bout</p>
+                    <h3 class="text-4xl font-extrabold text-white">Derrick Lewis</h3>
+                    <p class="text-slate-400 text-lg">28-12 (1 NC)</p>
+                </div>
+                <div class="flex-shrink-0">
+                    <p class="text-5xl font-black text-slate-500">VS</p>
+                </div>
+                <div class="flex-1 text-center md:text-right">
+                    <p class="text-red-500 font-semibold text-lg">Undefeated Prospect</p>
+                    <h3 class="text-4xl font-extrabold text-white">Tallison Teixeira</h3>
+                    <p class="text-slate-400 text-lg">8-0</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Full Fight Card Section -->
+        <section id="full-card">
+            <h2 class="text-3xl font-bold text-white text-center mb-8">Full Fight Card</h2>
+            <div id="fight-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Fight cards will be dynamically inserted here -->
+            </div>
+        </section>
+
+    </main>
+    
+    <!-- Footer -->
+    <footer class="text-center py-8 px-4 mt-12 border-t border-slate-800">
+        <p class="text-slate-500">This interactive experience is based on the "Predictive Analysis: UFC Fight Night" report.</p>
+        <p class="text-slate-600 text-sm mt-1">Application designed for information and entertainment purposes.</p>
+    </footer>
+
+    <!-- Modal -->
+    <div id="modal" class="fixed inset-0 bg-black bg-opacity-80 backdrop-blur-sm flex justify-center items-center p-4 z-50 hidden modal-enter-from">
+        <div id="modal-content" class="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl modal-content-enter-from">
+            <!-- Modal content will be dynamically inserted here -->
+        </div>
+    </div>
+
+
+<script>
+const fightData = [
+    {
+        fighters: ["Derrick Lewis", "Tallison Teixeira"],
+        records: ["28-12 (1 NC)", "8-0"],
+        weightClass: "Heavyweight (Main Event)",
+        prediction: { winner: "Tallison Teixeira", method: "TKO", round: 1 },
+        analysis: "Teixeira's undefeated record, 100% first-round finishing rate, and significant physical advantages (height, reach, 15-year age gap) create a compelling case for an early victory. While Lewis's power is legendary, his age and recent vulnerability to aggressive, powerful opponents suggest he will struggle with Teixeira's relentless pressure from the opening bell. The market consensus heavily favors an early stoppage for the Brazilian prospect.",
+        stats: {
+            fighter1: { age: 40, height: 75, reach: 79, slpm: 2.48, strAcc: 50, tdDef: 52 },
+            fighter2: { age: 25, height: 79, reach: 83, slpm: 14.61, strAcc: 59, tdDef: 0 },
+        },
+        odds: { fighter1: 260, fighter2: -325 },
+        isMainCard: true,
+    },
+    {
+        fighters: ["Stephen Thompson", "Gabriel Bonfim"],
+        records: ["17-7-1", "17-1"],
+        weightClass: "Welterweight (Co-Main)",
+        prediction: { winner: "Gabriel Bonfim", method: "Submission", round: 2 },
+        analysis: "This is a classic striker vs. grappler matchup. Bonfim's aggressive, submission-heavy style and high takedown accuracy directly target Thompson's primary weakness. At 42, 'Wonderboy' will likely find it difficult to defend takedowns for 15 minutes against a younger, relentless opponent with 13 submission wins. Bonfim is expected to get the fight to the mat and find a finish.",
+        stats: {
+            fighter1: { age: 42, height: 72, reach: 75, slpm: 4.16, strAcc: 44, tdDef: 64 },
+            fighter2: { age: 27, height: 73, reach: 74, slpm: 3.42, strAcc: 56, tdDef: 85 },
+        },
+        odds: { fighter1: 330, fighter2: -425 },
+        isMainCard: true,
+    },
+    {
+        fighters: ["Calvin Kattar", "Steve Garcia"],
+        records: ["23-9", "17-5"],
+        weightClass: "Featherweight",
+        prediction: { winner: "Steve Garcia", method: "TKO", round: 2 },
+        analysis: "Garcia is riding a massive wave of momentum with five straight knockout wins. While Kattar is a skilled boxer, he's on a four-fight losing streak and has reportedly declined since a knee injury. Garcia's power, pressure, and confidence will likely overwhelm the veteran, leading to another stoppage victory for the 'Mean Machine'.",
+        stats: {
+            fighter1: { age: 37, height: 71, reach: 72, slpm: 5.12, strAcc: 40, tdDef: 89 },
+            fighter2: { age: 33, height: 72, reach: 75, slpm: 5.04, strAcc: 56, tdDef: 66 },
+        },
+        odds: { fighter1: 114, fighter2: -135 },
+        isMainCard: true,
+    },
+    {
+        fighters: ["Nate Landwehr", "Morgan Charriere"],
+        records: ["18-6", "20-11-1"],
+        weightClass: "Featherweight",
+        prediction: { winner: "Morgan Charriere", method: "Decision", round: 3 },
+        analysis: "Charriere's well-rounded skillset, blending clean striking with a formidable grappling background (Judo & Luta Livre black belts), gives him more ways to win. Landwehr's 'savage' pressure is dangerous, but he absorbs a lot of damage. Charriere's fight IQ should allow him to counter-strike effectively and mix in takedowns to control the fight and secure a decision.",
+        stats: {
+            fighter1: { age: 37, height: 69, reach: 72, slpm: 5.59, strAcc: 46, tdDef: 74 },
+            fighter2: { age: 29, height: 68, reach: 70, slpm: 3.86, strAcc: 49, tdDef: 83 },
+        },
+        odds: { fighter1: 215, fighter2: -265 },
+        isMainCard: true,
+    },
+    {
+        fighters: ["Vitor Petrino", "Austen Lane"],
+        records: ["11-2", "13-6 (1 NC)"],
+        weightClass: "Heavyweight",
+        prediction: { winner: "Vitor Petrino", method: "TKO", round: 2 },
+        analysis: "Although Petrino is debuting at Heavyweight and giving up size, he is the more technical and well-rounded fighter. His blend of powerful striking and solid wrestling should allow him to dictate the fight. Lane has knockout power but has also been susceptible to being knocked out himself. Petrino's superior skill set should prevail.",
+        stats: {
+            fighter1: { age: 28, height: 74, reach: 77, slpm: 3.19, strAcc: 48, tdDef: 58 },
+            fighter2: { age: 37, height: 78, reach: 80, slpm: 4.88, strAcc: 52, tdDef: 100 },
+        },
+        odds: { fighter1: -675, fighter2: 490 },
+        isMainCard: true,
+    },
+    {
+        fighters: ["Junior Tafa", "Tuco Tokkos"],
+        records: ["6-3", "10-5"],
+        weightClass: "Light Heavyweight",
+        prediction: { winner: "Junior Tafa", method: "TKO", round: 1 },
+        analysis: "This matchup heavily favors Tafa's raw power. All six of his wins have come by knockout. Facing Tokkos, who is on a three-fight losing skid, Tafa's 'Juggernaut' style is perfectly positioned to secure another early, decisive finish.",
+        stats: {
+            fighter1: { age: 28, height: 75, reach: 75, slpm: 4.09, strAcc: 50, tdDef: 85 },
+            fighter2: { age: 34, height: 76, reach: 76, slpm: 2.50, strAcc: 40, tdDef: 50 },
+        },
+        odds: { fighter1: -185, fighter2: 154 },
+        isMainCard: false,
+    },
+    {
+        fighters: ["Max Griffin", "Chris Curtis"],
+        records: ["20-11", "31-12 (1 NC)"],
+        weightClass: "Welterweight",
+        prediction: { winner: "Chris Curtis", method: "Decision", round: 3 },
+        analysis: "Curtis returns to Welterweight, a move he feels confident about. Known for his high-volume striking and 'action-man' brawling style, he should be able to outwork Griffin. His excellent takedown defense will likely keep the fight standing, where his pace and pressure will win him the rounds.",
+        stats: {
+            fighter1: { age: 39, height: 71, reach: 76, slpm: 4.22, strAcc: 50, tdDef: 65 },
+            fighter2: { age: 38, height: 70, reach: 75, slpm: 6.16, strAcc: 50, tdDef: 82 },
+        },
+        odds: { fighter1: 260, fighter2: -325 },
+        isMainCard: false,
+    },
+    {
+        fighters: ["Jake Matthews", "Chidi Njokuani"],
+        records: ["21-7", "25-10 (1 NC)"],
+        weightClass: "Welterweight",
+        prediction: { winner: "Chidi Njokuani", method: "TKO", round: 1 },
+        analysis: "Njokuani's significant height and reach advantage, combined with his 'kill or be killed' striking style, makes him a huge threat. Matthews is tough, but Njokuani's power and accuracy often lead to early finishes. Expect 'Chidi Bang Bang' to live up to his name and find an opening in the first round.",
+        stats: {
+            fighter1: { age: 30, height: 71, reach: 73, slpm: 3.19, strAcc: 45, tdDef: 67 },
+            fighter2: { age: 36, height: 75, reach: 80, slpm: 4.19, strAcc: 62, tdDef: 60 },
+        },
+        odds: { fighter1: 120, fighter2: -142 },
+        isMainCard: false,
+    },
+    {
+        fighters: ["Lauren Murphy", "Eduarda Moura"],
+        records: ["16-6", "11-1"],
+        weightClass: "Flyweight",
+        prediction: { winner: "Eduarda Moura", method: "Submission", round: 1 },
+        analysis: "This is a classic 'passing of the torch' fight. Murphy is 42, returning from a two-year layoff for her retirement fight. Moura is a young, aggressive grappler with a high takedown rate and perfect takedown defense. Expect Moura to dominate from the start, taking the fight to the ground for a quick submission.",
+        stats: {
+            fighter1: { age: 42, height: 66, reach: 67, slpm: 3.82, strAcc: 41, tdDef: 66 },
+            fighter2: { age: 26, height: 66, reach: 67, slpm: 2.19, strAcc: 52, tdDef: 100 },
+        },
+        odds: { fighter1: 470, fighter2: -650 },
+        isMainCard: false,
+    },
+    {
+        fighters: ["Kennedy Nzechukwu", "Valter Walker"],
+        records: ["14-5", "13-1"],
+        weightClass: "Heavyweight",
+        prediction: { winner: "Kennedy Nzechukwu", method: "Decision", round: 3 },
+        analysis: "While Walker has solid wrestling, Nzechukwu's excellent 81% takedown defense is a strong counter. This fight is likely to stay on the feet, where Nzechukwu's higher striking volume and proven knockout power should give him a clear advantage over three rounds, leading to a decision victory.",
+        stats: {
+            fighter1: { age: 33, height: 77, reach: 83, slpm: 5.37, strAcc: 45, tdDef: 81 },
+            fighter2: { age: 27, height: 77, reach: 79, slpm: 3.00, strAcc: 50, tdDef: 50 },
+        },
+        odds: { fighter1: -198, fighter2: 164 },
+        isMainCard: false,
+    },
+    {
+        fighters: ["Mitch Ramirez", "Mike Davis"],
+        records: ["8-2", "11-3"],
+        weightClass: "Lightweight",
+        prediction: { winner: "Mike Davis", method: "Decision", round: 3 },
+        analysis: "Both men have knockout power, but Mike 'Beast Boy' Davis is the more complete martial artist with a solid wrestling and submission game. His ability to mix striking with takedowns will be the difference-maker, allowing him to control the fight and outpoint Ramirez for a decision win.",
+        stats: {
+            fighter1: { age: 32, height: 69, reach: 71, slpm: 3.50, strAcc: 48, tdDef: 60 },
+            fighter2: { age: 32, height: 72, reach: 72, slpm: 6.20, strAcc: 51, tdDef: 75 },
+        },
+        odds: { fighter1: 675, fighter2: -1050 },
+        isMainCard: false,
+    },
+     {
+        fighters: ["Fatima Kline", "Melissa Martinez"],
+        records: ["7-1", "8-1"],
+        weightClass: "Strawweight",
+        prediction: { winner: "Fatima Kline", method: "Submission", round: 2 },
+        analysis: "This is a grappler vs. striker matchup where the grappler has a massive advantage. Kline's strong BJJ background and perfect 100% takedown accuracy will be too much for Martinez, whose takedown defense is a known liability. Kline will get this fight to the mat and work for a submission.",
+        stats: {
+            fighter1: { age: 24, height: 66, reach: 67, slpm: 2.00, strAcc: 50, tdDef: 100 },
+            fighter2: { age: 28, height: 62, reach: 66, slpm: 4.50, strAcc: 42, tdDef: 25 },
+        },
+        odds: { fighter1: -1350, fighter2: 800 },
+        isMainCard: false,
+    }
+];
+
+const modal = document.getElementById('modal');
+const modalContent = document.getElementById('modal-content');
+const fightList = document.getElementById('fight-list');
+let taleOfTheTapeChart, statsRadarChart, oddsChart;
+
+function getPredictionIcon(method) {
+    switch(method.toLowerCase()) {
+        case 'tko':
+        case 'ko':
+            return '🥊';
+        case 'submission':
+            return '🥋';
+        case 'decision':
+            return '📜';
+        default:
+            return '🏆';
+    }
+}
+
+function renderFightCards() {
+    fightList.innerHTML = fightData.map((fight, index) => `
+        <div class="bg-slate-800 border border-slate-700 rounded-xl shadow-lg p-5 cursor-pointer hover:bg-slate-700/50 hover:-translate-y-1 transition-all duration-300" onclick="openModal(${index})">
+            <p class="text-sm font-semibold ${fight.isMainCard ? 'text-red-400' : 'text-sky-400'} mb-2">${fight.weightClass}</p>
+            <div class="flex justify-between items-center">
+                <div>
+                    <h4 class="text-lg font-bold text-white">${fight.fighters[0]}</h4>
+                    <p class="text-slate-400 text-sm">${fight.records[0]}</p>
+                </div>
+                <p class="text-2xl font-black text-slate-500 mx-2">VS</p>
+                <div class="text-right">
+                    <h4 class="text-lg font-bold text-white">${fight.fighters[1]}</h4>
+                    <p class="text-slate-400 text-sm">${fight.records[1]}</p>
+                </div>
+            </div>
+            <div class="mt-4 pt-4 border-t border-slate-700/50 text-center">
+                <p class="text-sm text-slate-400">Prediction:</p>
+                <p class="text-md font-bold text-white">${getPredictionIcon(fight.prediction.method)} ${fight.prediction.winner} via ${fight.prediction.method} (R${fight.prediction.round})</p>
+            </div>
+        </div>
+    `).join('');
+}
+
+
+function openModal(index) {
+    const fight = fightData[index];
+
+    modalContent.innerHTML = `
+        <div class="p-6 md:p-8">
+            <div class="flex justify-between items-start">
+                <div>
+                    <p class="text-lg font-semibold ${fight.isMainCard ? 'text-red-400' : 'text-sky-400'}">${fight.weightClass}</p>
+                    <h3 class="text-2xl md:text-3xl font-extrabold text-white">${fight.fighters[0]} vs. ${fight.fighters[1]}</h3>
+                </div>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-white transition-colors">&times;</button>
+            </div>
+
+            <div class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div>
+                    <h4 class="text-xl font-bold text-white mb-4 border-b-2 border-red-500 pb-2">Prediction & Rationale</h4>
+                    <p class="font-bold text-lg text-white mb-2">${getPredictionIcon(fight.prediction.method)} ${fight.prediction.winner} <span class="font-medium">via ${fight.prediction.method} in Round ${fight.prediction.round}</span></p>
+                    <p class="text-slate-300 leading-relaxed">${fight.analysis}</p>
+                </div>
+                <div>
+                    <h4 class="text-xl font-bold text-white mb-4 border-b-2 border-red-500 pb-2">Tale of the Tape</h4>
+                    <div class="chart-container" style="height: 200px;">
+                        <canvas id="taleOfTheTapeChart"></canvas>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="text-xl font-bold text-white mb-4 border-b-2 border-red-500 pb-2">Key Stat Comparison</h4>
+                     <div class="chart-container" style="height: 280px; max-height: 280px;">
+                        <canvas id="statsRadarChart"></canvas>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="text-xl font-bold text-white mb-4 border-b-2 border-red-500 pb-2">Betting Odds</h4>
+                    <div class="chart-container" style="height: 150px; max-height: 150px;">
+                        <canvas id="oddsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    modal.classList.remove('hidden', 'modal-enter-from');
+    modal.classList.add('modal-enter-active');
+    modalContent.classList.remove('modal-content-enter-from');
+    modalContent.classList.add('modal-content-enter-active');
+    
+    document.body.style.overflow = 'hidden';
+
+    createCharts(fight);
+}
+
+
+function createCharts(fight) {
+    const { fighter1, fighter2 } = fight.stats;
+
+    if (taleOfTheTapeChart) taleOfTheTapeChart.destroy();
+    const ctxTale = document.getElementById('taleOfTheTapeChart').getContext('2d');
+    taleOfTheTapeChart = new Chart(ctxTale, {
+        type: 'bar',
+        data: {
+            labels: ['Age (Yrs)', 'Height (in)', 'Reach (in)'],
+            datasets: [
+                {
+                    label: fight.fighters[0],
+                    data: [fighter1.age, fighter1.height, fighter1.reach],
+                    backgroundColor: 'rgba(239, 68, 68, 0.7)',
+                    borderColor: 'rgba(239, 68, 68, 1)',
+                    borderWidth: 1
+                },
+                {
+                    label: fight.fighters[1],
+                    data: [fighter2.age, fighter2.height, fighter2.reach],
+                    backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                    borderColor: 'rgba(59, 130, 246, 1)',
+                    borderWidth: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            indexAxis: 'y',
+            scales: {
+                x: { ticks: { color: '#94a3b8' } },
+                y: { ticks: { color: '#cbd5e1', font: { weight: 'bold' } } }
+            },
+            plugins: {
+                legend: { labels: { color: '#cbd5e1' } },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `${context.dataset.label}: ${context.raw}`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    if (statsRadarChart) statsRadarChart.destroy();
+    const ctxRadar = document.getElementById('statsRadarChart').getContext('2d');
+    statsRadarChart = new Chart(ctxRadar, {
+        type: 'radar',
+        data: {
+            labels: ['SLpM', 'Str. Acc. (%)', 'TD Def. (%)'],
+            datasets: [{
+                label: fight.fighters[0],
+                data: [fighter1.slpm, fighter1.strAcc, fighter1.tdDef],
+                fill: true,
+                backgroundColor: 'rgba(239, 68, 68, 0.2)',
+                borderColor: 'rgb(239, 68, 68)',
+                pointBackgroundColor: 'rgb(239, 68, 68)',
+            }, {
+                label: fight.fighters[1],
+                data: [fighter2.slpm, fighter2.strAcc, fighter2.tdDef],
+                fill: true,
+                backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                borderColor: 'rgb(59, 130, 246)',
+                pointBackgroundColor: 'rgb(59, 130, 246)',
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                r: {
+                    angleLines: { color: 'rgba(255, 255, 255, 0.2)' },
+                    grid: { color: 'rgba(255, 255, 255, 0.2)' },
+                    pointLabels: { color: '#cbd5e1', font: { size: 12, weight: 'bold' } },
+                    ticks: { color: '#94a3b8', backdropColor: 'rgba(0,0,0,0)' }
+                }
+            },
+            plugins: {
+                legend: { labels: { color: '#cbd5e1' } }
+            }
+        }
+    });
+
+    if (oddsChart) oddsChart.destroy();
+    const ctxOdds = document.getElementById('oddsChart').getContext('2d');
+    const oddsData = fight.odds;
+    const favorite = oddsData.fighter1 < oddsData.fighter2 ? 0 : 1;
+    oddsChart = new Chart(ctxOdds, {
+        type: 'bar',
+        data: {
+            labels: [fight.fighters[0], fight.fighters[1]],
+            datasets: [{
+                label: 'Moneyline Odds',
+                data: [oddsData.fighter1, oddsData.fighter2],
+                backgroundColor: [favorite === 0 ? 'rgba(59, 130, 246, 0.7)' : 'rgba(239, 68, 68, 0.7)', favorite === 1 ? 'rgba(59, 130, 246, 0.7)' : 'rgba(239, 68, 68, 0.7)'],
+                borderColor: [favorite === 0 ? 'rgb(59, 130, 246)' : 'rgb(239, 68, 68)', favorite === 1 ? 'rgb(59, 130, 246)' : 'rgb(239, 68, 68)'],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            indexAxis: 'y',
+            scales: {
+                x: { ticks: { color: '#94a3b8' } },
+                y: { ticks: { color: '#cbd5e1', font: { weight: 'bold' } } }
+            },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            if (context.raw !== null) {
+                                label += context.raw > 0 ? `+${context.raw}`: context.raw;
+                            }
+                            return label;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+
+function closeModal() {
+    modal.classList.add('modal-leave-active');
+    modalContent.classList.add('modal-content-leave-active');
+    
+    modal.addEventListener('transitionend', () => {
+        modal.classList.add('hidden');
+        modal.classList.remove('modal-leave-active', 'modal-enter-active');
+        modalContent.classList.remove('modal-content-leave-active', 'modal-content-enter-active');
+        document.body.style.overflow = 'auto';
+    }, { once: true });
+}
+
+modal.addEventListener('click', (event) => {
+    if (event.target === modal) {
+        closeModal();
+    }
+});
+
+document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && !modal.classList.contains('hidden')) {
+        closeModal();
+    }
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    renderFightCards();
+});
+
+</script>
+</body>
+</html>
